@@ -1,11 +1,16 @@
 from flask import Flask, render_template, request, session, redirect
 import sqlite3
+import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
 # Secret key for sessions
-app.secret_key = "cloud_task_manager_secret_key"
+# In the cloud, this will come from the SECRET_KEY environment variable.
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "cloud_task_manager_secret_key"
+)
 
 
 # Database initialization
