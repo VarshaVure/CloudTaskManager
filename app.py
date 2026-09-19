@@ -1,28 +1,35 @@
 from flask import Flask, render_template, request, session, redirect
-import sqlite3
+import psycopg2
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-# Secret key for sessions
-# In the cloud, this will come from the SECRET_KEY environment variable.
+# Secret key from Render environment variable
 app.secret_key = os.environ.get(
     "SECRET_KEY",
     "cloud_task_manager_secret_key"
 )
 
+# PostgreSQL database URL
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-# Database initialization
+
+# Connect to PostgreSQL
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL)
+
+
+# Create database tables
 def init_db():
 
-    connection = sqlite3.connect("database.db")
+    connection = get_db_connection()
     cursor = connection.cursor()
 
     # Users table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL
@@ -32,7 +39,7 @@ def init_db():
     # Tasks table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             task TEXT NOT NULL,
             status TEXT DEFAULT 'Pending'
@@ -40,7 +47,12 @@ def init_db():
     """)
 
     connection.commit()
+    cursor.close()
     connection.close()
+
+
+# Initialize database
+init_db()
 
 
 # Home page
@@ -61,23 +73,27 @@ def register():
 
         hashed_password = generate_password_hash(password)
 
-        connection = sqlite3.connect("database.db")
+        connection = get_db_connection()
         cursor = connection.cursor()
 
         try:
 
             cursor.execute("""
                 INSERT INTO users (name, email, password)
-                VALUES (?, ?, ?)
+                VALUES (%s, %s, %s)
             """, (name, email, hashed_password))
 
             connection.commit()
 
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
 
+            connection.rollback()
+            cursor.close()
             connection.close()
+
             return "Email already registered!"
 
+        cursor.close()
         connection.close()
 
         return "Registration successful!"
@@ -94,16 +110,17 @@ def login():
         email = request.form["email"]
         password = request.form["password"]
 
-        connection = sqlite3.connect("database.db")
+        connection = get_db_connection()
         cursor = connection.cursor()
 
         cursor.execute(
-            "SELECT * FROM users WHERE email = ?",
+            "SELECT * FROM users WHERE email = %s",
             (email,)
         )
 
         user = cursor.fetchone()
 
+        cursor.close()
         connection.close()
 
         if user and check_password_hash(user[3], password):
@@ -128,16 +145,17 @@ def dashboard():
     user_id = session["user_id"]
     user_name = session["user_name"]
 
-    connection = sqlite3.connect("database.db")
+    connection = get_db_connection()
     cursor = connection.cursor()
 
     cursor.execute(
-        "SELECT * FROM tasks WHERE user_id = ?",
+        "SELECT * FROM tasks WHERE user_id = %s",
         (user_id,)
     )
 
     tasks = cursor.fetchall()
 
+    cursor.close()
     connection.close()
 
     return render_template(
@@ -157,15 +175,17 @@ def add_task():
     task = request.form["task"]
     user_id = session["user_id"]
 
-    connection = sqlite3.connect("database.db")
+    connection = get_db_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
         INSERT INTO tasks (user_id, task)
-        VALUES (?, ?)
+        VALUES (%s, %s)
     """, (user_id, task))
 
     connection.commit()
+
+    cursor.close()
     connection.close()
 
     return redirect("/dashboard")
@@ -180,9 +200,6 @@ def logout():
     return redirect("/login")
 
 
-# Start application
+# Run application locally
 if __name__ == "__main__":
-
-    init_db()
-
     app.run(debug=True)
