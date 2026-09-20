@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Monitoring Dashboard</title>
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <style>
+
+        body {
+            background-color: #f5f7fb;
+        }
+
+        .dashboard-title {
+            font-weight: 700;
+        }
+
+        .metric-card {
+            border: none;
+            border-radius: 15px;
+            padding: 25px;
+            height: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .metric-icon {
+            font-size: 35px;
+        }
+
+        .metric-value {
+            font-size: 30px;
+            font-weight: 700;
+        }
+
+        .status-online {
+            color: #198754;
+            font-weight: 700;
+        }
+
+        .logs-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .log-row {
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- ========================================= -->
+<!-- NAVBAR -->
+<!-- ========================================= -->
+
+<nav class="navbar navbar-dark bg-dark">
+
+    <div class="container">
+
+        <span class="navbar-brand fw-bold">
+            Cloud Task Manager
+        </span>
+
+        <a href="/dashboard"
+           class="btn btn-light btn-sm">
+
+            Back to Dashboard
+
+        </a>
+
+    </div>
+
+</nav>
+
+
+<!-- ========================================= -->
+<!-- MAIN CONTENT -->
+<!-- ========================================= -->
+
+<div class="container py-5">
+
+
+    <!-- TITLE -->
+
+    <div class="text-center mb-5">
+
+        <h1 class="dashboard-title">
+            Monitoring Dashboard
+        </h1>
+
+        <p class="text-muted">
+            Real-time application and server monitoring
+        </p>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- METRIC CARDS -->
+    <!-- ========================================= -->
+
+    <div class="row g-4">
+
+
+        <!-- ACTIVE USERS -->
+
+        <div class="col-md-6 col-lg-3">
+
+            <div class="metric-card bg-white">
+
+                <div class="metric-icon">
+                    👥
+                </div>
+
+                <h6 class="text-muted mt-3">
+                    Active Users
+                </h6>
+
+                <div class="metric-value">
+                    {{ active_users }}
+                </div>
+
+                <small class="text-muted">
+                    Users active recently
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- UPTIME -->
+
+        <div class="col-md-6 col-lg-3">
+
+            <div class="metric-card bg-white">
+
+                <div class="metric-icon">
+                    ⏱️
+                </div>
+
+                <h6 class="text-muted mt-3">
+                    Application Uptime
+                </h6>
+
+                <div class="metric-value"
+                     style="font-size: 22px;">
+
+                    {{ uptime }}
+
+                </div>
+
+                <small class="text-muted">
+                    Since application startup
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- SERVER STATUS -->
+
+        <div class="col-md-6 col-lg-3">
+
+            <div class="metric-card bg-white">
+
+                <div class="metric-icon">
+                    🟢
+                </div>
+
+                <h6 class="text-muted mt-3">
+                    Server Status
+                </h6>
+
+                <div class="metric-value status-online">
+
+                    {{ server_status }}
+
+                </div>
+
+                <small class="text-muted">
+                    Application server status
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- REQUESTS -->
+
+        <div class="col-md-6 col-lg-3">
+
+            <div class="metric-card bg-white">
+
+                <div class="metric-icon">
+                    📊
+                </div>
+
+                <h6 class="text-muted mt-3">
+                    Request Logs
+                </h6>
+
+                <div class="metric-value">
+
+                    {{ request_logs|length }}
+
+                </div>
+
+                <small class="text-muted">
+                    Recent requests recorded
+                </small>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- REQUEST LOGS -->
+    <!-- ========================================= -->
+
+    <div class="card logs-card mt-5">
+
+        <div class="card-body">
+
+            <h4 class="mb-4">
+                📋 Recent Request Logs
+            </h4>
+
+
+            {% if request_logs %}
+
+            <div class="table-responsive">
+
+                <table class="table table-hover">
+
+                    <thead class="table-dark">
+
+                        <tr>
+
+                            <th>Time</th>
+
+                            <th>Method</th>
+
+                            <th>Request Path</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for log in request_logs %}
+
+                        <tr class="log-row">
+
+                            <td>
+                                {{ log.time }}
+                            </td>
+
+                            <td>
+                                <span class="badge bg-primary">
+                                    {{ log.method }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ log.path }}
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-info">
+
+                No request logs available yet.
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- REFRESH -->
+    <!-- ========================================= -->
+
+    <div class="text-center mt-4">
+
+        <button
+            onclick="location.reload()"
+            class="btn btn-primary">
+
+            🔄 Refresh Monitoring Data
+
+        </button>
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>
